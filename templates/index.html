@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SalesCast — Linear Regression</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <div>
+          <h1>SalesCast</h1>
+          <p>Linear Regression Forecasting Engine</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge">ML Project</span>
+        <span class="badge accent">Linear Regression</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ROW 1: PREDICT + LR VISUAL EXPLAINER -->
+    <div class="grid-2">
+
+      <!-- LEFT: PREDICT PANEL -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">⚡</span>
+          <h2>Predict Sales</h2>
+          <div class="currency-toggle" id="currencyToggle" title="Switch currency">
+            <span class="cur-label" id="curLabelUSD">$ USD</span>
+            <div class="toggle-track" onclick="toggleCurrency()">
+              <div class="toggle-thumb" id="toggleThumb"></div>
+            </div>
+            <span class="cur-label" id="curLabelINR">₹ INR</span>
+          </div>
+        </div>
+
+        <div class="currency-bar" id="currencyBar">
+          <span id="currencyBarText">Entering values in <strong>USD ($)</strong></span>
+          <span class="rate-note" id="rateNote">1 USD = ₹83.5</span>
+        </div>
+
+        <div class="form-group">
+          <label id="labelAdSpend">Advertising Spend ($)</label>
+          <div class="input-wrap">
+            <span class="input-prefix" id="prefixAdSpend">$</span>
+            <input type="number" id="adSpend" placeholder="e.g. 12000" min="0" />
+          </div>
+          <div class="slider-row">
+            <input type="range" id="adSpendSlider" min="1000" max="20000" step="500" value="12000"/>
+            <span id="adSpendVal">$12,000</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Number of Salespeople</label>
+          <div class="input-wrap">
+            <span class="input-prefix">👤</span>
+            <input type="number" id="numSales" placeholder="e.g. 15" min="1" max="100"/>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="numSalesSlider" min="1" max="50" step="1" value="15"/>
+            <span id="numSalesVal">15</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="labelAvgPrice">Average Price per Unit ($)</label>
+          <div class="input-wrap">
+            <span class="input-prefix" id="prefixAvgPrice">$</span>
+            <input type="number" id="avgPrice" placeholder="e.g. 130" min="1"/>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="avgPriceSlider" min="50" max="300" step="5" value="130"/>
+            <span id="avgPriceVal">$130</span>
+          </div>
+        </div>
+
+        <button class="btn-predict" id="predictBtn" onclick="runPrediction()">
+          <span>Run Forecast</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <div class="result-box hidden" id="resultBox">
+          <div class="result-label">Predicted Monthly Sales</div>
+          <div class="result-value" id="resultValue">$0</div>
+          <div class="result-secondary" id="resultSecondary"></div>
+          <div class="result-breakdown" id="resultBreakdown"></div>
+        </div>
+
+        <div class="error-box hidden" id="errorBox"></div>
+      </section>
+
+      <!-- RIGHT: ANIMATED LR EXPLAINER (no video) -->
+      <section class="panel lr-explainer-panel">
+        <div class="panel-header">
+          <span class="panel-icon">🎓</span>
+          <h2>How Linear Regression Works</h2>
+        </div>
+
+        <!-- Animated LR graph canvas -->
+        <div class="lr-anim-wrap">
+          <canvas id="lrAnimCanvas"></canvas>
+          <div class="lr-anim-caption" id="lrAnimCaption">
+            Plotting data points: more Ad Spend → more Sales
+          </div>
+        </div>
+
+        <!-- Step cards -->
+        <div class="lr-steps">
+          <div class="lr-step">
+            <span class="lr-num">01</span>
+            <div>
+              <strong>Collect Data</strong>
+              <p>Each dot = one row. X axis = feature (e.g. Ad Spend). Y axis = Sales.</p>
+            </div>
+          </div>
+          <div class="lr-step">
+            <span class="lr-num">02</span>
+            <div>
+              <strong>Draw Best-Fit Line</strong>
+              <p>Algorithm finds line <em>Y = mX + b</em> that minimizes total error (distance from all dots to line).</p>
+            </div>
+          </div>
+          <div class="lr-step">
+            <span class="lr-num">03</span>
+            <div>
+              <strong>Predict New Values</strong>
+              <p>Give new X → plug into equation → get predicted Y (Sales).</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ROW 2: CHARTS + DATASET -->
+    <div class="grid-2">
+
+      <!-- LEFT: MODEL CHARTS -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">📈</span>
+          <h2>Model Visualization</h2>
+        </div>
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('chart-coeff', this)">Coefficients</button>
+          <button class="tab" onclick="switchTab('chart-scatter', this)">Trend</button>
+        </div>
+
+        <!-- COEFFICIENTS TAB -->
+        <div class="tab-content active" id="chart-coeff">
+          <canvas id="coeffChart" height="200"></canvas>
+          <!-- Coefficient explanation cards -->
+          <div class="coeff-cards" id="coeffCards"></div>
+        </div>
+
+        <!-- TREND TAB -->
+        <div class="tab-content" id="chart-scatter">
+          <canvas id="scatterChart" height="200"></canvas>
+          <div class="trend-explain">
+            <strong>📌 Why does the line go up?</strong>
+            <p>Each point is one data row. As <em>Advertising Spend</em> increases, <em>Sales</em> also increase — the model learned this positive relationship from the 50 training rows. The slope of the line is the coefficient of Ad Spend.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: DATASET -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">🗂️</span>
+          <h2>Dataset Preview</h2>
+          <span class="dataset-count-badge" id="datasetCountBadge">— rows</span>
+        </div>
+        <div class="table-wrap">
+          <table id="dataTable">
+            <thead><tr id="tableHead"></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- MODEL EQUATION PANEL -->
+    <section class="panel coeff-panel" id="coeffPanel" style="display:none">
+      <div class="panel-header">
+        <span class="panel-icon">🔬</span>
+        <h2>Model Equation — Explained</h2>
+      </div>
+
+      <!-- The raw equation -->
+      <div class="equation" id="equationBox"></div>
+
+      <!-- Plain English breakdown -->
+      <div class="equation-explain">
+        <p class="eq-title">📖 What does this mean in simple words?</p>
+        <div id="equationPlain"></div>
+      </div>
+
+      <p class="coeff-explain">
+        <strong>Why is Avg Price negative?</strong>
+        The model found that in this dataset, as average price per unit goes up, fewer units are sold, so total sales revenue goes <em>down</em>. This is classic price-demand behavior — higher price → less demand. The coefficient is negative because it <em>reduces</em> the final prediction.
+      </p>
+    </section>
+
+    <!-- RETRAIN -->
+    <div class="retrain-row">
+      <button class="btn-retrain" onclick="retrainModel()">🔄 Retrain Model</button>
+      <span class="retrain-note">Re-trains Linear Regression on the full dataset</span>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p>SalesCast — Sales Forecasting using Linear Regression &nbsp;|&nbsp; ML Mini Project &nbsp;|&nbsp; Python · Scikit-learn · Flask</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

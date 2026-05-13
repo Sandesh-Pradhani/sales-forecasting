@@ -1,0 +1,20 @@
+{
+  "train_r2": 0.9975,
+  "test_r2": 0.9975,
+  "train_rmse": 1299.85,
+  "test_rmse": 1094.0,
+  "train_mae": 1038.68,
+  "test_mae": 820.68,
+  "r2_score": 0.9975,
+  "rmse": 1094.0,
+  "mae": 820.68,
+  "mse": 1196829.96,
+  "coefficients": {
+    "advertising_spend": 21728.956926576604,
+    "num_salespeople": 9688.822433324342,
+    "avg_price": -5442.603137495232
+  },
+  "intercept": 63812.5,
+  "train_size": 40,
+  "test_size": 10
+}
